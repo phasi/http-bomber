@@ -24,7 +24,7 @@ You need Go language installed on your computer before starting.
 You can either build manually with go or use the "wrapper" build script:
 
 ```bash
-./build.sh
+./build-tool.sh build
 ```
 
 ## Example run
