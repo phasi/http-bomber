@@ -1,3 +1,3 @@
 package main
 
-var AppVersion string = "dev"
+var AppVersion string = "versioninfo"
