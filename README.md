@@ -5,7 +5,7 @@ Make HTTP requests to one or multiple endpoints and send results to Elasticsearc
 
 You need to install the following software:
 
-- Make & git (for building)
+- bash & git (for building)
 - Go (for building)
 - Docker
     - Local elasticsearch + kibana started ([with this script](resources/elasticsearch-kibana.sh))
@@ -21,10 +21,10 @@ resources/elasticsearch-kibana.sh destroy
 
 You need Go language installed on your computer before starting.
 
-You can either build manually with go or use the "wrapper" Makefile:
+You can either build manually with go or use the "wrapper" build script:
 
 ```bash
-make build
+./build.sh
 ```
 
 ## Example run
@@ -32,7 +32,7 @@ make build
 
 ```bash
 
-# Go to dist folder created by the Makefile
+# Go to dist folder created by the build script
 cd dist
 
 # Example command
