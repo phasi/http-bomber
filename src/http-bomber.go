@@ -31,6 +31,7 @@ var networkStack string = "tcp"
 // Settings holds information on one HTTP test
 type Settings struct {
 	URL      string
+	Headers  http.Header
 	Duration time.Duration
 	Timeout  time.Duration
 }
@@ -39,6 +40,8 @@ type Settings struct {
 type Result struct {
 	Timestamp       time.Time     `json:"@timestamp"`
 	URL             string        `json:"url"`
+	ReqHeaders      http.Header   `json:"req_headers"`
+	RespHeaders     http.Header   `json:"resp_headers"`
 	DestinationIP   string        `json:"destination_ip"`
 	DestinationPort int           `json:"destination_port"`
 	RespStatusCode  int           `json:"resp_status_code"`
@@ -81,7 +84,7 @@ func makeRequest(client *http.Client, settings *Settings) *Result {
 	}
 
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
-
+	req.Header = settings.Headers
 	r := &Result{URL: settings.URL, ReqStartTime: time.Now()}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -98,10 +101,11 @@ func makeRequest(client *http.Client, settings *Settings) *Result {
 		}
 		return nil
 	}
-
 	r.ReqEndTime = time.Now()
 	r.ReqRoundTrip = r.ReqEndTime.Sub(r.ReqStartTime)
 	r.RespStatusCode = resp.StatusCode
+	r.ReqHeaders = req.Header
+	r.RespHeaders = resp.Header
 	// separate IP and port
 	dst := strings.Split(rmtaddr, ":")
 	dstPort, _ := strconv.Atoi(dst[len(dst)-1])
@@ -238,12 +242,21 @@ func init() {
 	configLogging()
 }
 
+func parseHeadersFlag(headers *string, parsedHeaders *http.Header) {
+	hdrsSlice := strings.Split(*headers, ",")
+	for _, v := range hdrsSlice {
+		hdr := strings.Split(v, ":")
+		parsedHeaders.Add(hdr[0], hdr[1])
+	}
+}
+
 func main() {
 
 	// Flags
 	flag.BoolVar(&Debug, "debug", false, "This flag turns debugging on.")
 	flag.StringVar(&networkStack, "n", "tcp4", "Network stack")
 	url := flag.String("url", "http://localhost", "URL to test. Add multiple URLs separated by a comma (no whitespaces in between)")
+	hdrs := flag.String("headers", fmt.Sprintf("X-Tested-With:http-bomber/%s", AppVersion), "Additional headers example-> Host:localhost,X-Custom-Header:helloworld")
 	duration := flag.Int("duration", 10, "Test duration in seconds")
 	timeout := flag.Int("timeout", 5, "Connection timeout in seconds")
 	var elURL string
@@ -257,6 +270,10 @@ func main() {
 		fmt.Println(AppVersion)
 		os.Exit(0)
 	}
+
+	var headers http.Header = make(http.Header)
+	headers.Add("User-Agent", fmt.Sprintf("http-bomber/%s", AppVersion))
+	parseHeadersFlag(hdrs, &headers)
 
 	InfoLogger.Println("Starting HTTP Bomber", AppVersion)
 
@@ -275,6 +292,7 @@ func main() {
 	for i := 0; i < len(urls); i++ {
 		InfoLogger.Printf("Starting test %v (URL: %s)", i+1, urls[i])
 		settings := Settings{URL: urls[i], Duration: time.Duration(*duration), Timeout: time.Duration(*timeout)}
+		settings.Headers = headers
 		go RunTest(&settings, &wg)
 	}
 
