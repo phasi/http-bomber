@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  worker:
+    image: phasi/http_bomber
+    command: ["-timeout", "2", "-duration", "15", "-export", "-el-url", "http://elasticsearch:9200/test/_doc", "-url", "http://example.org", "-n", "tcp4", "-headers", "Host:jotain.com"]
+    networks:
+      - elk
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 120s
+
+networks:
+  elk:
+    external: true

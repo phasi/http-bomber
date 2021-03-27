@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: http-bomber
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: http-bomber
+  template:
+    metadata:
+      labels:
+        app: http-bomber
+    spec:
+      containers:
+      - name: http-bomber
+        image: phasi/http_bomber:latest
+        ports:
+        command: ["-url", "http://url1.com,http://url2.com", "-duration", 3, "-timeout", 3, "-export", "-el-url", "http://elasticsearch:9200/indexname/_doc", "-headers", "SomeHeader:SomeValue", "-debug"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: http-bomber
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+  selector:
+    app: http-bomber
