@@ -6,7 +6,6 @@ rm -rf dist/
 
 build() {
 
-git checkout main
 
 clean()
 
