@@ -1,8 +1,17 @@
 #!/bin/bash
 
-VERSIONTAG=$(git describe --tags --abbrev=0)
+clean() {
+rm -rf dist/
+}
 
 build() {
+
+git checkout main
+
+clean()
+
+
+VERSIONTAG=$(git describe --tags --abbrev=0)
 
 cp -r src temp
 mkdir dist
@@ -18,8 +27,6 @@ go build -o dist/http-bomber temp/*.go
 rm -rf temp
 }
 
-clean() {
-rm -rf dist/
-}
+
 
 "$@"
