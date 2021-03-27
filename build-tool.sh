@@ -20,8 +20,13 @@ package main
 var AppVersion string = \"${VERSIONTAG}\"
 """ > temp/version.go
 
-
-go build -o dist/http-bomber temp/*.go
+if [[ $1 == "darwin" ]]; then
+    GOOS=darwin GOARCH=amd64 go build -o dist/http-bomber_darwin_amd64 temp/*.go
+elif [[ $1 == "linux" ]]; then
+    GOOS=linux GOARCH=amd64 go build -o dist/http-bomber_linux_amd64 temp/*.go
+elif [[ $1 == "windows" ]]; then
+    GOOS=windows GOARCH=amd64 go build -o dist/http-bomber_win_amd64.exe temp/*.go
+fi
 
 rm -rf temp
 }
