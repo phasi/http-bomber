@@ -37,8 +37,9 @@ cd dist
 
 # Example command
 ./http-bomber \
--n tcp4
+-n tcp4 \
 -url http://domainone.com,http://domaintwo.com \
+-headers Header1:value,Header2:anothervalue \
 -duration 10 \
 -timeout 3 \
 -export \
