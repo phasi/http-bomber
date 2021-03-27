@@ -1,14 +1,14 @@
 #!/bin/bash
 
+
+
 clean() {
 rm -rf dist/
 }
 
 build() {
 
-
-clean()
-
+clean
 
 VERSIONTAG=$(git describe --tags --abbrev=0)
 
