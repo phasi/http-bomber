@@ -9,8 +9,11 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
+	"net/http/httptrace"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -23,6 +26,7 @@ var Debug bool
 var logFilePath string = "./httptest.log"
 var exportedDataChan chan []*Result
 var useExporter bool = false
+var networkStack string = "tcp"
 
 // Settings holds information on one HTTP test
 type Settings struct {
@@ -33,12 +37,14 @@ type Settings struct {
 
 // Result holds information on one request
 type Result struct {
-	Timestamp      time.Time     `json:"@timestamp"`
-	URL            string        `json:"url"`
-	RespStatusCode int           `json:"resp_status_code"`
-	ReqStartTime   time.Time     `json:"req_start_time"`
-	ReqEndTime     time.Time     `json:"req_end_time"`
-	ReqRoundTrip   time.Duration `json:"req_round_trip"`
+	Timestamp       time.Time     `json:"@timestamp"`
+	URL             string        `json:"url"`
+	DestinationIP   string        `json:"destination_ip"`
+	DestinationPort int           `json:"destination_port"`
+	RespStatusCode  int           `json:"resp_status_code"`
+	ReqStartTime    time.Time     `json:"req_start_time"`
+	ReqEndTime      time.Time     `json:"req_end_time"`
+	ReqRoundTrip    time.Duration `json:"req_round_trip"`
 }
 
 // Configure application logging
@@ -57,8 +63,27 @@ func configLogging() {
 
 // Make a single HTTP request as per settings object
 func makeRequest(client *http.Client, settings *Settings) *Result {
+
+	req, err := http.NewRequest("GET", settings.URL, nil)
+	if err != nil {
+		if Debug {
+			DebugLogger.Println("Failed to form request: ", err)
+		}
+		return nil
+	}
+
+	var rmtaddr string
+
+	trace := &httptrace.ClientTrace{
+		GotConn: func(connInfo httptrace.GotConnInfo) {
+			rmtaddr = connInfo.Conn.RemoteAddr().String()
+		},
+	}
+
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+
 	r := &Result{URL: settings.URL, ReqStartTime: time.Now()}
-	resp, err := client.Get(settings.URL)
+	resp, err := client.Do(req)
 	if err != nil {
 		if Debug {
 			DebugLogger.Println("Failed request: ", err)
@@ -77,6 +102,13 @@ func makeRequest(client *http.Client, settings *Settings) *Result {
 	r.ReqEndTime = time.Now()
 	r.ReqRoundTrip = r.ReqEndTime.Sub(r.ReqStartTime)
 	r.RespStatusCode = resp.StatusCode
+	// separate IP and port
+	dst := strings.Split(rmtaddr, ":")
+	dstPort, _ := strconv.Atoi(dst[len(dst)-1])
+	dstIP := strings.Join(dst[:len(dst)-1], ":")
+
+	r.DestinationIP = dstIP
+	r.DestinationPort = dstPort
 	if Debug {
 		DebugLogger.Println(r.URL, r.RespStatusCode, r.ReqRoundTrip)
 	}
@@ -89,10 +121,22 @@ func RunTest(settings *Settings, wg *sync.WaitGroup) {
 	var resultSet []*Result
 
 	// Create connection pool to add performance
-	t := http.DefaultTransport.(*http.Transport).Clone()
+	// t := http.DefaultTransport.(*http.Transport).Clone()
+
+	t := &http.Transport{
+		Dial: (func(network, addr string) (net.Conn, error) {
+			return (&net.Dialer{
+				Timeout:   3 * time.Second,
+				LocalAddr: nil,
+				DualStack: false,
+			}).Dial(networkStack, addr)
+		}),
+	}
 	t.MaxIdleConns = 100
 	t.MaxConnsPerHost = 100
 	t.MaxIdleConnsPerHost = 100
+	t.ForceAttemptHTTP2 = false // make optional later
+
 	client := http.Client{
 		Timeout:   settings.Timeout * time.Second,
 		Transport: t,
@@ -198,6 +242,7 @@ func main() {
 
 	// Flags
 	flag.BoolVar(&Debug, "debug", false, "This flag turns debugging on.")
+	flag.StringVar(&networkStack, "n", "tcp4", "Network stack")
 	url := flag.String("url", "http://localhost", "URL to test. Add multiple URLs separated by a comma (no whitespaces in between)")
 	duration := flag.Int("duration", 10, "Test duration in seconds")
 	timeout := flag.Int("timeout", 5, "Connection timeout in seconds")
