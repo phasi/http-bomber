@@ -26,6 +26,7 @@ var Debug bool
 var logFilePath string = "./httptest.log"
 var exportedDataChan chan []*Result
 var useExporter bool = false
+var exportToFile bool = false
 var networkStack string = "tcp"
 
 // Settings holds information on one HTTP test
@@ -116,6 +117,7 @@ func makeRequest(client *http.Client, settings *Settings) *Result {
 	if Debug {
 		DebugLogger.Println(r.URL, r.RespStatusCode, r.ReqRoundTrip)
 	}
+	r.Timestamp = time.Now()
 	return r
 }
 
@@ -123,9 +125,6 @@ func makeRequest(client *http.Client, settings *Settings) *Result {
 // results are appended in a resultset ([]Result) which is then passed on to the channel
 func RunTest(settings *Settings, wg *sync.WaitGroup) {
 	var resultSet []*Result
-
-	// Create connection pool to add performance
-	// t := http.DefaultTransport.(*http.Transport).Clone()
 
 	t := &http.Transport{
 		Dial: (func(network, addr string) (net.Conn, error) {
@@ -180,8 +179,6 @@ func exporter(wg *sync.WaitGroup, elasticURL *string) {
 	var failedReqs []*Result
 	// iterate over resultset
 	for _, el := range rs {
-		// set the "processing" timestamp
-		el.Timestamp = time.Now()
 		// convert data to JSON
 		data, err := json.Marshal(el)
 		if err != nil {
@@ -236,6 +233,25 @@ func exporter(wg *sync.WaitGroup, elasticURL *string) {
 
 }
 
+func exportToFileForElastic(wg *sync.WaitGroup, exportPath *string) {
+	// Read one object from channel
+	rs := <-exportedDataChan
+	resultFile, err := os.OpenFile(*exportPath, os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		InfoLogger.Fatal("Cannot write output to a file.")
+	}
+	defer resultFile.Close()
+	data, err := json.Marshal(rs)
+	if err != nil {
+		if Debug {
+			DebugLogger.Println("Failed to process JSON")
+		}
+		return
+	}
+	resultFile.Write(data)
+	wg.Done()
+}
+
 // Initial operations
 func init() {
 	// configure logging
@@ -262,6 +278,8 @@ func main() {
 	var elURL string
 	flag.StringVar(&elURL, "el-url", "http://localhost:9200/testdata/_doc", "Elastic search URL")
 	flag.BoolVar(&useExporter, "export", false, "Export data to elasticsearch")
+	flag.BoolVar(&exportToFile, "export-to-file", false, "Export data to file in elasticsearch format")
+	exportPath := flag.String("export-path", "/tmp/http-bomber-results.json", "Export to a different path")
 	var showVersion bool = false
 	flag.BoolVar(&showVersion, "version", false, "Show version info")
 	flag.Parse()
@@ -299,17 +317,25 @@ func main() {
 	// Wait for tests
 	wg.Wait()
 
-	// Export test results to elasticsearch
 	if useExporter {
 		InfoLogger.Println("Starting Exporter")
-		InfoLogger.Println("Exporting resultsets to elasticsearch")
-		// Start goroutines for each url/endpoint
-		for i := 0; i < len(urls); i++ {
-			wg.Add(1)
-			go exporter(&wg, &elURL)
+		if exportToFile {
+			InfoLogger.Println("Exporting resultsets to a file")
+			// Start goroutines for each url/endpoint
+			for i := 0; i < len(urls); i++ {
+				wg.Add(1)
+				go exportToFileForElastic(&wg, exportPath)
+			}
+			wg.Wait()
+		} else {
+			InfoLogger.Println("Exporting resultsets to elasticsearch")
+			// Start goroutines for each url/endpoint
+			for i := 0; i < len(urls); i++ {
+				wg.Add(1)
+				go exporter(&wg, &elURL)
+			}
+			wg.Wait()
 		}
-		// Wait for export goroutines
-		wg.Wait()
 		InfoLogger.Println("Exporting complete")
 	}
 
