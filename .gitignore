@@ -1,4 +1,5 @@
 .DS_Store
 src/*.log
+*.log
 dist
 test.sh
