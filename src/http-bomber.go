@@ -124,9 +124,6 @@ func makeRequest(client *http.Client, settings *Settings) *Result {
 func RunTest(settings *Settings, wg *sync.WaitGroup) {
 	var resultSet []*Result
 
-	// Create connection pool to add performance
-	// t := http.DefaultTransport.(*http.Transport).Clone()
-
 	t := &http.Transport{
 		Dial: (func(network, addr string) (net.Conn, error) {
 			return (&net.Dialer{
