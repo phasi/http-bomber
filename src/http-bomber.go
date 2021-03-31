@@ -143,16 +143,18 @@ func main() {
 	// Get results from channel
 	var results []*Result
 	for i := 0; i < len(urls); i++ {
-		results = <-exportedDataChan
+		incomingData := <-exportedDataChan
+		results = append(results, incomingData...)
 	}
 
 	// EXPORTING TO MODULES
 
 	// Elasticsearch
 	if elConfig.Export || elConfig.ExportToFile {
-		InfoLogger.Println("Exporting to elasticsearch")
+		InfoLogger.Println("Starting ElasticExporter")
 		// Start goroutines for each url/endpoint
 		for i := 0; i < len(urls); i++ {
+			DebugLogger.Println("Exporting data for url", urls[i])
 			wg.Add(1)
 			go ElasticExporter(&wg, &elConfig, results)
 		}
