@@ -149,7 +149,7 @@ func main() {
 	// EXPORTING TO MODULES
 
 	// Elasticsearch
-	if elConfig.Export {
+	if elConfig.Export || elConfig.ExportToFile {
 		InfoLogger.Println("Exporting to elasticsearch")
 		// Start goroutines for each url/endpoint
 		for i := 0; i < len(urls); i++ {
