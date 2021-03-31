@@ -42,32 +42,34 @@ func ElasticExporter(wg *sync.WaitGroup, config *ElasticsearchConfig, resultSet 
 		requestData += "\n"
 	}
 
-	// Create connection pool to add performance
-	t := http.DefaultTransport.(*http.Transport).Clone()
-	t.MaxIdleConns = 100
-	t.MaxConnsPerHost = 100
-	t.MaxIdleConnsPerHost = 100
-	// create new http client (TODO: Make timeout configurable)
-	client := http.Client{
-		Timeout:   2 * time.Second,
-		Transport: t,
-	}
-	// Make a request to elasticsearch
-	resp, err := client.Post(fmt.Sprintf("%s/_bulk?pretty", config.URL), "application/x-ndjson", bytes.NewBuffer([]byte(requestData)))
-	if err != nil {
-		// Log error and append to failed requests, move on to the next row
-		if Debug {
-			DebugLogger.Println("Failed to send request to Elasticsearch: ", err)
+	if config.Export {
+		// Create connection pool to add performance
+		t := http.DefaultTransport.(*http.Transport).Clone()
+		t.MaxIdleConns = 100
+		t.MaxConnsPerHost = 100
+		t.MaxIdleConnsPerHost = 100
+		// create new http client (TODO: Make timeout configurable)
+		client := http.Client{
+			Timeout:   2 * time.Second,
+			Transport: t,
 		}
-		// Take a little rest since we had an error
-		time.Sleep(1 * time.Second)
-	}
+		// Make a request to elasticsearch
+		resp, err := client.Post(fmt.Sprintf("%s/_bulk?pretty", config.URL), "application/x-ndjson", bytes.NewBuffer([]byte(requestData)))
+		if err != nil {
+			// Log error and append to failed requests, move on to the next row
+			if Debug {
+				DebugLogger.Println("Failed to send request to Elasticsearch: ", err)
+			}
+			// Take a little rest since we had an error
+			time.Sleep(1 * time.Second)
+		}
 
-	// Close response body
-	defer resp.Body.Close()
-	if strings.HasPrefix(resp.Status, "20") == false {
-		if Debug {
-			DebugLogger.Printf("Failed to send data to Elasticsearch (Status: %s)", resp.Status)
+		// Close response body
+		defer resp.Body.Close()
+		if strings.HasPrefix(resp.Status, "20") == false {
+			if Debug {
+				DebugLogger.Printf("Failed to send data to Elasticsearch (Status: %s)", resp.Status)
+			}
 		}
 	}
 
