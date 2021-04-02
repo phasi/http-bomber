@@ -14,9 +14,9 @@ import (
 )
 
 // GLOBALS
-var InfoLogger *log.Logger
-var DebugLogger *log.Logger
-var Debug bool
+var infoLogger *log.Logger
+var debugLogger *log.Logger
+var debug bool
 var showVersion bool = false
 var url string
 var hdrs string
@@ -64,8 +64,8 @@ func configLogging() {
 	} else {
 		mw = io.MultiWriter(os.Stdout, logFile)
 	}
-	InfoLogger = log.New(mw, "", log.Ldate|log.Ltime|log.Lshortfile)
-	DebugLogger = log.New(mw, "DEBUG ", log.Ldate|log.Ltime|log.Lshortfile)
+	infoLogger = log.New(mw, "", log.Ldate|log.Ltime|log.Lshortfile)
+	debugLogger = log.New(mw, "DEBUG ", log.Ldate|log.Ltime|log.Lshortfile)
 }
 
 func parseHeadersFlag(headers *string, parsedHeaders *http.Header) {
@@ -87,7 +87,7 @@ func init() {
 	flag.BoolVar(&showVersion, "version", false, "Show version info")
 
 	// Common flags
-	flag.BoolVar(&Debug, "debug", false, "This flag turns debugging on.")
+	flag.BoolVar(&debug, "debug", false, "This flag turns debugging on.")
 	flag.StringVar(&networkStack, "n", "tcp4", "Network stack")
 	flag.StringVar(&url, "url", "http://localhost", "URL to test. Add multiple URLs separated by a comma (no whitespaces in between)")
 	flag.StringVar(&hdrs, "headers", fmt.Sprintf("X-Tested-With:http-bomber/%s", AppVersion), "Additional headers example-> Host:localhost,X-Custom-Header:helloworld")
@@ -125,7 +125,7 @@ func init() {
 func main() {
 
 	// Log program start
-	InfoLogger.Println("Starting HTTP Bomber", AppVersion)
+	infoLogger.Println("Starting HTTP Bomber", AppVersion)
 
 	// Get URLs
 	urls := strings.Split(url, ",")
@@ -136,7 +136,7 @@ func main() {
 
 	// Goroutines for each url provided
 	for i := 0; i < len(urls); i++ {
-		InfoLogger.Printf("Starting test %v (URL: %s)", i+1, urls[i])
+		infoLogger.Printf("Starting test %v (URL: %s)", i+1, urls[i])
 		settings := Settings{URL: urls[i], Duration: time.Duration(duration), Timeout: time.Duration(timeout)}
 		settings.Headers = headers
 		go RunTest(&settings, &wg)
@@ -155,7 +155,7 @@ func main() {
 	// EXPORTING TO MODULES
 
 	if IPStackConfig.UseIPStack {
-		InfoLogger.Println("Starting IPStack module (ipstack.com)")
+		infoLogger.Println("Starting IPStack module (ipstack.com)")
 		if elConfig.Export {
 			mapping := `{
 				"properties" : {
@@ -172,29 +172,29 @@ func main() {
 			ElasticCreateIndexWithMapping(&elConfig, &mapping)
 		}
 		for i := 0; i < len(urls); i++ {
-			if Debug {
-				DebugLogger.Println("Getting IP information for url", urls[i])
+			if debug {
+				debugLogger.Println("Getting IP information for url", urls[i])
 			}
 			wg.Add(1)
 			go IPStackParseResults(&wg, results[i])
 		}
 		wg.Wait()
-		InfoLogger.Println("IPStack module completed.")
+		infoLogger.Println("IPStack module completed.")
 	}
 
 	// Elasticsearch
 	if elConfig.Export || elConfig.ExportToFile {
-		InfoLogger.Println("Starting ElasticExporter")
+		infoLogger.Println("Starting ElasticExporter")
 		// Start goroutines for each url/endpoint
 		for i := 0; i < len(urls); i++ {
-			if Debug {
-				DebugLogger.Println("Exporting data for url", urls[i])
+			if debug {
+				debugLogger.Println("Exporting data for url", urls[i])
 			}
 			wg.Add(1)
 			go ElasticExporter(&wg, &elConfig, results[i])
 		}
 		wg.Wait()
-		InfoLogger.Println("Exporting complete")
+		infoLogger.Println("Exporting complete")
 	}
 
 }

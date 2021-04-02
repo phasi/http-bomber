@@ -33,29 +33,29 @@ func ElasticCreateIndex(config *ElasticsearchConfig) {
 	indexURL := fmt.Sprintf("%s/%s", config.URL, config.IndexName)
 	req, err := http.NewRequest("PUT", indexURL, nil)
 	if err != nil {
-		if Debug {
-			DebugLogger.Println("Could form the request:", err)
+		if debug {
+			debugLogger.Println("Could form the request:", err)
 		}
 		return
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		if Debug {
-			DebugLogger.Println("Failed to create index:", err)
+		if debug {
+			debugLogger.Println("Failed to create index:", err)
 		}
 		return
 	}
 	// Close response body
 	defer resp.Body.Close()
 	if strings.HasPrefix(resp.Status, "20") == false {
-		if Debug {
-			DebugLogger.Printf("Failed to create index (Status: %s)", resp.Status)
+		if debug {
+			debugLogger.Printf("Failed to create index (Status: %s)", resp.Status)
 			bodyByte, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				DebugLogger.Println(err)
+				debugLogger.Println(err)
 				return
 			}
-			DebugLogger.Println(string(bodyByte))
+			debugLogger.Println(string(bodyByte))
 		}
 	}
 }
@@ -71,30 +71,30 @@ func ElasticCreateIndexWithMapping(config *ElasticsearchConfig, mapping *string)
 	mappingBytes := []byte(*mapping)
 	req, err := http.NewRequest("PUT", mappingEndpointURL, bytes.NewBuffer([]byte(mappingBytes)))
 	if err != nil {
-		if Debug {
-			DebugLogger.Println("Could form the request:", err)
+		if debug {
+			debugLogger.Println("Could form the request:", err)
 		}
 		return
 	}
 	req.Header.Add("Content-Type", "application/json")
 	resp, err := client.Do(req)
 	if err != nil {
-		if Debug {
-			DebugLogger.Println("Failed to create mapping:", err)
+		if debug {
+			debugLogger.Println("Failed to create mapping:", err)
 		}
 		return
 	}
 	// Close response body
 	defer resp.Body.Close()
 	if strings.HasPrefix(resp.Status, "20") == false {
-		if Debug {
-			DebugLogger.Printf("Failed to send data to Elasticsearch (Status: %s)", resp.Status)
+		if debug {
+			debugLogger.Printf("Failed to send data to Elasticsearch (Status: %s)", resp.Status)
 			bodyByte, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				DebugLogger.Println(err)
+				debugLogger.Println(err)
 				return
 			}
-			DebugLogger.Println(string(bodyByte))
+			debugLogger.Println(string(bodyByte))
 		}
 	}
 
@@ -109,8 +109,8 @@ func ElasticExporter(wg *sync.WaitGroup, config *ElasticsearchConfig, resultSet 
 	for _, v := range resultSet {
 		data, err := json.Marshal(v)
 		if err != nil {
-			if Debug {
-				DebugLogger.Println("Failed to process JSON")
+			if debug {
+				debugLogger.Println("Failed to process JSON")
 			}
 			return
 		}
@@ -135,8 +135,8 @@ func ElasticExporter(wg *sync.WaitGroup, config *ElasticsearchConfig, resultSet 
 		resp, err := client.Post(fmt.Sprintf("%s/_bulk?pretty", config.URL), "application/x-ndjson", bytes.NewBuffer([]byte(requestData)))
 		if err != nil {
 			// Log error and append to failed requests, move on to the next row
-			if Debug {
-				DebugLogger.Println("Failed to send request to Elasticsearch: ", err)
+			if debug {
+				debugLogger.Println("Failed to send request to Elasticsearch: ", err)
 			}
 			// Take a little rest since we had an error
 			time.Sleep(1 * time.Second)
@@ -145,8 +145,8 @@ func ElasticExporter(wg *sync.WaitGroup, config *ElasticsearchConfig, resultSet 
 		// Close response body
 		defer resp.Body.Close()
 		if strings.HasPrefix(resp.Status, "20") == false {
-			if Debug {
-				DebugLogger.Printf("Failed to send data to Elasticsearch (Status: %s)", resp.Status)
+			if debug {
+				debugLogger.Printf("Failed to send data to Elasticsearch (Status: %s)", resp.Status)
 			}
 		}
 	}
@@ -155,7 +155,7 @@ func ElasticExporter(wg *sync.WaitGroup, config *ElasticsearchConfig, resultSet 
 		randomFileName := fmt.Sprintf("%s-%v", config.ExportFilePath, rand.Int())
 		resultFile, err := os.OpenFile(randomFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 		if err != nil {
-			InfoLogger.Fatal("Cannot write output to a file.")
+			infoLogger.Fatal("Cannot write output to a file.")
 		}
 		defer resultFile.Close()
 		resultFile.WriteString(requestData)

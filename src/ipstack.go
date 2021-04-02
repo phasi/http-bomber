@@ -105,14 +105,14 @@ func (response *IPStackResponse) GetIPInfo(ipAddr string) IPStackResponse {
 	url := fmt.Sprintf("http://api.ipstack.com/%s?access_key=%s", ipAddr, IPStackConfig.APIKey)
 	resp, err := client.Get(url)
 	if err != nil {
-		if Debug {
-			DebugLogger.Println("Could not get IP information from IPStack", err)
+		if debug {
+			debugLogger.Println("Could not get IP information from IPStack", err)
 		}
 	}
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		if Debug {
-			DebugLogger.Println("Could not get response", err)
+		if debug {
+			debugLogger.Println("Could not get response", err)
 		}
 	}
 	json.Unmarshal(bodyBytes, &response)
