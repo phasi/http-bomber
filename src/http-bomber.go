@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// Globals
+// GLOBALS
 var InfoLogger *log.Logger
 var DebugLogger *log.Logger
 var Debug bool
@@ -40,16 +40,17 @@ type Settings struct {
 
 // Result holds information on one request
 type Result struct {
-	Timestamp       time.Time     `json:"@timestamp"`
-	URL             string        `json:"url"`
-	ReqHeaders      http.Header   `json:"req_headers"`
-	RespHeaders     http.Header   `json:"resp_headers"`
-	DestinationIP   string        `json:"destination_ip"`
-	DestinationPort int           `json:"destination_port"`
-	RespStatusCode  int           `json:"resp_status_code"`
-	ReqStartTime    time.Time     `json:"req_start_time"`
-	ReqEndTime      time.Time     `json:"req_end_time"`
-	ReqRoundTrip    time.Duration `json:"req_round_trip"`
+	Timestamp       time.Time       `json:"@timestamp"`
+	URL             string          `json:"url"`
+	ReqHeaders      http.Header     `json:"req_headers"`
+	RespHeaders     http.Header     `json:"resp_headers"`
+	DestinationIP   string          `json:"destination_ip"`
+	DestinationPort int             `json:"destination_port"`
+	RespStatusCode  int             `json:"resp_status_code"`
+	ReqStartTime    time.Time       `json:"req_start_time"`
+	ReqEndTime      time.Time       `json:"req_end_time"`
+	ReqRoundTrip    time.Duration   `json:"req_round_trip"`
+	IPStack         IPStackResponse `json:"ipstack"`
 }
 
 // Configure application logging
@@ -102,6 +103,10 @@ func init() {
 	flag.BoolVar(&elConfig.ExportToFile, "elastic-export-to-file", false, "Export data to file in elasticsearch format")
 	flag.StringVar(&elConfig.ExportFilePath, "elastic-export-filepath", "/tmp/http-bomber-results.json", "Specify filepath for Elasticsearch export")
 
+	// IPStack
+	flag.BoolVar(&IPStackConfig.UseIPStack, "ipstack", false, "Use IPStack for example for getting geolocation details")
+	flag.StringVar(&IPStackConfig.APIKey, "ipstack-apikey", "1234", "Your personal IPStack API key")
+	flag.IntVar(&IPStackConfig.Timeout, "ipstack-timeout", 3, "IPStack connect timeout")
 	// Parse flags
 	flag.Parse()
 
@@ -149,12 +154,42 @@ func main() {
 
 	// EXPORTING TO MODULES
 
+	if IPStackConfig.UseIPStack {
+		InfoLogger.Println("Starting IPStack module (ipstack.com)")
+		if elConfig.Export {
+			mapping := `{
+				"properties" : {
+				  "ipstack" : {
+					"properties": {
+					  "LatitudeLongitude" : {
+						"type" : "geo_point"
+					  }
+					}
+				}
+			  }
+			}\n`
+			ElasticCreateIndex(&elConfig)
+			ElasticCreateIndexWithMapping(&elConfig, &mapping)
+		}
+		for i := 0; i < len(urls); i++ {
+			if Debug {
+				DebugLogger.Println("Getting IP information for url", urls[i])
+			}
+			wg.Add(1)
+			go IPStackParseResults(&wg, results[i])
+		}
+		wg.Wait()
+		InfoLogger.Println("IPStack module completed.")
+	}
+
 	// Elasticsearch
 	if elConfig.Export || elConfig.ExportToFile {
 		InfoLogger.Println("Starting ElasticExporter")
 		// Start goroutines for each url/endpoint
 		for i := 0; i < len(urls); i++ {
-			DebugLogger.Println("Exporting data for url", urls[i])
+			if Debug {
+				DebugLogger.Println("Exporting data for url", urls[i])
+			}
 			wg.Add(1)
 			go ElasticExporter(&wg, &elConfig, results[i])
 		}
