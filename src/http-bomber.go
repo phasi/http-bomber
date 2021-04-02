@@ -141,10 +141,10 @@ func main() {
 	wg.Wait()
 
 	// Get results from channel
-	var results []*Result
+	var results [][]*Result
 	for i := 0; i < len(urls); i++ {
 		incomingData := <-exportedDataChan
-		results = append(results, incomingData...)
+		results = append(results, incomingData)
 	}
 
 	// EXPORTING TO MODULES
@@ -156,7 +156,7 @@ func main() {
 		for i := 0; i < len(urls); i++ {
 			DebugLogger.Println("Exporting data for url", urls[i])
 			wg.Add(1)
-			go ElasticExporter(&wg, &elConfig, results)
+			go ElasticExporter(&wg, &elConfig, results[i])
 		}
 		wg.Wait()
 		InfoLogger.Println("Exporting complete")

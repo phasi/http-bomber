@@ -14,6 +14,7 @@ import (
 
 var elConfig ElasticsearchConfig
 
+// ElasticsearchConfig holds configuration for exporting to elasticsearch
 type ElasticsearchConfig struct {
 	URL            string
 	IndexName      string
@@ -22,8 +23,7 @@ type ElasticsearchConfig struct {
 	ExportFilePath string
 }
 
-// bulkExportToElastic is the newer export function
-// that can export results in bulk and/or save them to a file
+// ElasticExporter exports data to either elasticsearch or file or both
 func ElasticExporter(wg *sync.WaitGroup, config *ElasticsearchConfig, resultSet []*Result) {
 
 	var requestData string
@@ -50,7 +50,7 @@ func ElasticExporter(wg *sync.WaitGroup, config *ElasticsearchConfig, resultSet 
 		t.MaxIdleConnsPerHost = 100
 		// create new http client (TODO: Make timeout configurable)
 		client := http.Client{
-			Timeout:   2 * time.Second,
+			Timeout:   5 * time.Second,
 			Transport: t,
 		}
 		// Make a request to elasticsearch
