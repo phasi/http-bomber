@@ -22,6 +22,7 @@ var url string
 var hdrs string
 var duration int
 var timeout int
+var interval int
 var headers http.Header = make(http.Header)
 var logFilePath string = "./httptest.log"
 var exportedDataChan chan []*Result
@@ -36,6 +37,7 @@ type Settings struct {
 	Headers  http.Header
 	Duration time.Duration
 	Timeout  time.Duration
+	Interval time.Duration
 }
 
 // Result holds information on one request
@@ -93,6 +95,7 @@ func init() {
 	flag.StringVar(&hdrs, "headers", fmt.Sprintf("X-Tested-With:http-bomber/%s", AppVersion), "Additional headers example-> Host:localhost,X-Custom-Header:helloworld")
 	flag.IntVar(&duration, "duration", 10, "Test duration in seconds")
 	flag.IntVar(&timeout, "timeout", 5, "Connection timeout in seconds")
+	flag.IntVar(&interval, "interval", 1000, "Request interval in milliseconds")
 
 	// MODULE FLAGS
 
@@ -137,7 +140,7 @@ func main() {
 	// Goroutines for each url provided
 	for i := 0; i < len(urls); i++ {
 		infoLogger.Printf("Starting test %v (URL: %s)", i+1, urls[i])
-		settings := Settings{URL: urls[i], Duration: time.Duration(duration), Timeout: time.Duration(timeout)}
+		settings := Settings{URL: urls[i], Duration: time.Duration(duration), Timeout: time.Duration(timeout), Interval: time.Duration(interval)}
 		settings.Headers = headers
 		go RunTest(&settings, &wg)
 	}

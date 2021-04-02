@@ -93,14 +93,14 @@ func RunTest(settings *Settings, wg *sync.WaitGroup) {
 
 	startTime := time.Now()
 	for {
+		if time.Since(startTime) >= settings.Duration*time.Second {
+			break
+		}
 		result := makeRequest(&client, settings)
 		if result != nil {
 			resultSet = append(resultSet, result)
 		}
-		if time.Since(startTime) >= settings.Duration*time.Second {
-			break
-		}
-		time.Sleep(100)
+		time.Sleep(settings.Interval * time.Millisecond)
 	}
 	// Pass resultset to channel
 	exportedDataChan <- resultSet
