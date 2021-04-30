@@ -72,15 +72,15 @@ func makeRequest(client *http.Client, settings *Settings) *Result {
 func RunTest(settings *Settings, wg *sync.WaitGroup) {
 	var resultSet []*Result
 
-	t := &http.Transport{
-		Dial: (func(network, addr string) (net.Conn, error) {
-			return (&net.Dialer{
-				Timeout:   3 * time.Second,
-				LocalAddr: nil,
-				DualStack: false,
-			}).Dial(networkStack, addr)
-		}),
-	}
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.Dial = (func(network, addr string) (net.Conn, error) {
+		return (&net.Dialer{
+			Timeout:   3 * time.Second,
+			LocalAddr: nil,
+			DualStack: false,
+		}).Dial(networkStack, addr)
+	})
+
 	t.MaxIdleConns = 100
 	t.MaxConnsPerHost = 100
 	t.MaxIdleConnsPerHost = 100
