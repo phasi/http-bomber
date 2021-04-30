@@ -84,7 +84,7 @@ HTTP test duration in seconds.
 
 ## Interval
 
-HTTP request interval in milliseconds. Tip: Don't send this too small or you might be blocked by a firewall. Default is 1000 (one second).
+HTTP request interval in milliseconds. Tip: Don't set this too small or you might be blocked by a firewall. Default is 1000 (one second).
 
 ```bash
 -interval <int>
