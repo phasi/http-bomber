@@ -28,18 +28,20 @@ var logFilePath string = "./httptest.log"
 var exportedDataChan chan []*Result
 var networkStack string = "tcp"
 var tlsVerify bool = false
+var followRedirects bool = false
 
 // Wait group for goroutines
 var wg sync.WaitGroup
 
 // Settings holds information on one HTTP test
 type Settings struct {
-	URL           string
-	Headers       http.Header
-	Duration      time.Duration
-	Timeout       time.Duration
-	Interval      time.Duration
-	SkipTLSVerify bool
+	URL             string
+	Headers         http.Header
+	Duration        time.Duration
+	Timeout         time.Duration
+	Interval        time.Duration
+	SkipTLSVerify   bool
+	FollowRedirects bool
 }
 
 // Result holds information on one request
@@ -99,6 +101,7 @@ func init() {
 	flag.IntVar(&timeout, "timeout", 5, "Connection timeout in seconds")
 	flag.IntVar(&interval, "interval", 1000, "Request interval in milliseconds")
 	flag.BoolVar(&tlsVerify, "tls-skip-verify", false, "Skip TLS certificate validation.")
+	flag.BoolVar(&followRedirects, "follow-redirects", false, "Follow HTTP Redirects.")
 
 	// MODULE FLAGS
 
@@ -143,7 +146,14 @@ func main() {
 	// Goroutines for each url provided
 	for i := 0; i < len(urls); i++ {
 		infoLogger.Printf("Starting test %v (URL: %s)", i+1, urls[i])
-		settings := Settings{URL: urls[i], Duration: time.Duration(duration), Timeout: time.Duration(timeout), Interval: time.Duration(interval), SkipTLSVerify: tlsVerify}
+		settings := Settings{
+			URL:             urls[i],
+			Duration:        time.Duration(duration),
+			Timeout:         time.Duration(timeout),
+			Interval:        time.Duration(interval),
+			SkipTLSVerify:   tlsVerify,
+			FollowRedirects: followRedirects,
+		}
 		settings.Headers = headers
 		go RunTest(&settings, &wg)
 	}
