@@ -37,7 +37,7 @@ cd dist
 
 # Example command
 ./http-bomber \
--url http://example.org,http://google.com \
+-url http://example.org,https://google.com \
 -n tcp4 \
 -headers "CustomHeader:IamAValue,X-Something:another_value" \
 -timeout 2 \
@@ -51,6 +51,7 @@ cd dist
 -ipstack \
 -ipstack-apikey "yourapikey" \
 -ipstack-timeout 5 \
+-tls-skip-verify \
 -debug
 
 
