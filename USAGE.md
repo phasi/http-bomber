@@ -154,7 +154,7 @@ This will configure exporting to a file. The elasticsearch bulk API format will 
 You also need to define the filepath:
 
 ```bash
--elastic-export-filepath <path>
+-elastic-export-filepath <path/to/file.json>
 ```
 
 ### Defining index
