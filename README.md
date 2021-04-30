@@ -53,6 +53,7 @@ cd dist
 -ipstack-timeout 5 \
 -tls-skip-verify \
 -follow-redirects \
+-force-try-http2 \
 -debug
 
 

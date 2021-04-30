@@ -85,7 +85,7 @@ func RunTest(settings *Settings, wg *sync.WaitGroup) {
 	t.MaxIdleConns = 100
 	t.MaxConnsPerHost = 100
 	t.MaxIdleConnsPerHost = 100
-	t.ForceAttemptHTTP2 = false // make optional later
+	t.ForceAttemptHTTP2 = settings.ForceAttemptHTTP2 // make optional later
 
 	client := http.Client{
 		Timeout:   settings.Timeout * time.Second,
