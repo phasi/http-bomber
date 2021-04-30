@@ -1,6 +1,9 @@
 # http-bomber
 Make HTTP requests to one or multiple endpoints and send results to Elasticsearch
 
+## Usage documentation
+See ["USAGE.md"](./USAGE.md)
+
 ## Prerequisites
 
 You need to install the following software:
