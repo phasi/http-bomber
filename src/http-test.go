@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -80,7 +81,7 @@ func RunTest(settings *Settings, wg *sync.WaitGroup) {
 			DualStack: false,
 		}).Dial(networkStack, addr)
 	})
-
+	t.TLSClientConfig = &tls.Config{InsecureSkipVerify: settings.SkipTLSVerify}
 	t.MaxIdleConns = 100
 	t.MaxConnsPerHost = 100
 	t.MaxIdleConnsPerHost = 100
