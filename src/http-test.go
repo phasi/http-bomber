@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -16,8 +17,8 @@ func makeRequest(client *http.Client, settings *Settings) *Result {
 
 	req, err := http.NewRequest("GET", settings.URL, nil)
 	if err != nil {
-		if Debug {
-			DebugLogger.Println("Failed to form request: ", err)
+		if debug {
+			debugLogger.Println("Failed to form request: ", err)
 		}
 		return nil
 	}
@@ -35,16 +36,16 @@ func makeRequest(client *http.Client, settings *Settings) *Result {
 	r := &Result{URL: settings.URL, ReqStartTime: time.Now()}
 	resp, err := client.Do(req)
 	if err != nil {
-		if Debug {
-			DebugLogger.Println("Failed request: ", err)
+		if debug {
+			debugLogger.Println("Failed request: ", err)
 		}
 		return nil
 	}
 	defer resp.Body.Close()
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		if Debug {
-			DebugLogger.Println(err)
+		if debug {
+			debugLogger.Println(err)
 		}
 		return nil
 	}
@@ -60,8 +61,8 @@ func makeRequest(client *http.Client, settings *Settings) *Result {
 
 	r.DestinationIP = dstIP
 	r.DestinationPort = dstPort
-	if Debug {
-		DebugLogger.Println(r.URL, r.RespStatusCode, r.ReqRoundTrip)
+	if debug {
+		debugLogger.Println(r.URL, r.RespStatusCode, r.ReqRoundTrip)
 	}
 	r.Timestamp = time.Now()
 	return r
@@ -72,15 +73,15 @@ func makeRequest(client *http.Client, settings *Settings) *Result {
 func RunTest(settings *Settings, wg *sync.WaitGroup) {
 	var resultSet []*Result
 
-	t := &http.Transport{
-		Dial: (func(network, addr string) (net.Conn, error) {
-			return (&net.Dialer{
-				Timeout:   3 * time.Second,
-				LocalAddr: nil,
-				DualStack: false,
-			}).Dial(networkStack, addr)
-		}),
-	}
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.Dial = (func(network, addr string) (net.Conn, error) {
+		return (&net.Dialer{
+			Timeout:   3 * time.Second,
+			LocalAddr: nil,
+			DualStack: false,
+		}).Dial(networkStack, addr)
+	})
+	t.TLSClientConfig = &tls.Config{InsecureSkipVerify: settings.SkipTLSVerify}
 	t.MaxIdleConns = 100
 	t.MaxConnsPerHost = 100
 	t.MaxIdleConnsPerHost = 100
@@ -91,16 +92,16 @@ func RunTest(settings *Settings, wg *sync.WaitGroup) {
 		Transport: t,
 	}
 
-	start_time := time.Now()
+	startTime := time.Now()
 	for {
+		if time.Since(startTime) >= settings.Duration*time.Second {
+			break
+		}
 		result := makeRequest(&client, settings)
 		if result != nil {
 			resultSet = append(resultSet, result)
 		}
-		if time.Since(start_time) >= settings.Duration*time.Second {
-			break
-		}
-		time.Sleep(100)
+		time.Sleep(settings.Interval * time.Millisecond)
 	}
 	// Pass resultset to channel
 	exportedDataChan <- resultSet

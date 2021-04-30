@@ -37,16 +37,20 @@ cd dist
 
 # Example command
 ./http-bomber \
--url http://localhost,http://example.org \
+-url http://example.org,http://google.com \
 -n tcp4 \
--headers "CustomHeader:IamAValue" \
+-headers "CustomHeader:IamAValue,X-Something:another_value" \
 -timeout 2 \
 -duration 30 \
+-interval 1000 \
 -elastic-export \
 -elastic-index testidata \
 -elastic-url http://localhost:9200 \
 -elastic-export-to-file \
 -elastic-export-filepath ~/results.json \
+-ipstack \
+-ipstack-apikey "yourapikey" \
+-ipstack-timeout 5 \
 -debug
 
 
