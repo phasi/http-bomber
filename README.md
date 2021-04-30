@@ -52,6 +52,7 @@ cd dist
 -ipstack-apikey "yourapikey" \
 -ipstack-timeout 5 \
 -tls-skip-verify \
+-follow-redirects \
 -debug
 
 

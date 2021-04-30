@@ -92,6 +92,13 @@ func RunTest(settings *Settings, wg *sync.WaitGroup) {
 		Transport: t,
 	}
 
+	// check if client should follow redirects
+	if !settings.FollowRedirects {
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	}
+
 	startTime := time.Now()
 	for {
 		if time.Since(startTime) >= settings.Duration*time.Second {
