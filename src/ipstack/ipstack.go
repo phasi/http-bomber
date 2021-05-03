@@ -3,6 +3,7 @@ package ipstack
 import (
 	"encoding/json"
 	"fmt"
+	"http-bomber/elasticsearch"
 	"http-bomber/httptest"
 	"http-bomber/logging"
 	"io/ioutil"
@@ -107,6 +108,39 @@ type Response struct {
 	Currency          Currency
 	Connection        Connection
 	Security          Security
+}
+
+// Start ...
+func (mod *Module) Start(settings *Settings, results [][]*httptest.Result, elasticModule *elasticsearch.Module, elasticConfig *elasticsearch.Config) {
+
+	if settings.UseIPStack {
+		mod.Logger.Info("Starting IPStack module (ipstack.com)")
+		if elasticConfig.Export {
+			mapping := `{
+				"properties" : {
+				  "ipstack" : {
+					"properties": {
+					  "LatitudeLongitude" : {
+						"type" : "geo_point"
+					  }
+					}
+				}
+			  }
+			}\n`
+			elasticModule.CreateIndex(elasticConfig)
+			elasticModule.CreateIndexWithMapping(elasticConfig, &mapping)
+		}
+		for i := 0; i < len(results); i++ {
+			if mod.Debug {
+				mod.Logger.Debug(fmt.Sprint("Getting IP information for url ", results[i][0].URL))
+			}
+			mod.WaitGroup.Add(1)
+			go mod.ParseResults(settings, results[i])
+		}
+		mod.WaitGroup.Wait()
+		mod.Logger.Info("IPStack module completed.")
+	}
+
 }
 
 // ParseResults parses the resultsets from http-bomber

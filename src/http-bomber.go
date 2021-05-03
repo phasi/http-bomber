@@ -17,7 +17,12 @@ import (
 	"http-bomber/logging"
 )
 
+// MODULE GLOBALS
+var elConfig elasticsearch.Config
+var ipstackConfig ipstack.Settings
+
 // GLOBALS
+
 // logger
 var logger logging.Logger
 
@@ -45,13 +50,6 @@ var networkStack string = "tcp"
 var tlsVerify bool = false
 var followRedirects bool = false
 var forceAttemptHTTP2 bool = false
-
-// MODULE GLOBALS
-// Elasticsearch
-var elConfig elasticsearch.Config
-
-// IP Stack
-var ipstackConfig ipstack.Settings
 
 // Configure application logging
 func configLogging() {
@@ -148,7 +146,7 @@ func main() {
 		settings.Headers = headers
 		test := httptest.Test{}
 		test.Init(&settings, &exportedDataChan, &wg, &logger, debug)
-		go test.RunTest()
+		go test.Start()
 	}
 
 	// Wait for tests
@@ -163,54 +161,16 @@ func main() {
 
 	// EXPORTING TO MODULES
 
-	// define elasticsearch module first
+	// Module Elasticsearch (define elasticsearch module first!!)
 	elasticSearchModule := elasticsearch.Module{}
 	elasticSearchModule.Init(&wg, &logger, debug)
 
-	if ipstackConfig.UseIPStack {
+	// Module IPStack
+	ipstackModule := ipstack.Module{}
+	ipstackModule.Init(&wg, &logger, debug)
+	ipstackModule.Start(&ipstackConfig, results, &elasticSearchModule, &elConfig)
 
-		ipstackModule := ipstack.Module{}
-		ipstackModule.Init(&wg, &logger, debug)
+	// Run Elastic module last
+	elasticSearchModule.Start(&elConfig, results)
 
-		logger.Info("Starting IPStack module (ipstack.com)")
-		if elConfig.Export {
-			mapping := `{
-				"properties" : {
-				  "ipstack" : {
-					"properties": {
-					  "LatitudeLongitude" : {
-						"type" : "geo_point"
-					  }
-					}
-				}
-			  }
-			}\n`
-			elasticSearchModule.CreateIndex(&elConfig)
-			elasticSearchModule.CreateIndexWithMapping(&elConfig, &mapping)
-		}
-		for i := 0; i < len(urls); i++ {
-			if debug {
-				logger.Debug(fmt.Sprint("Getting IP information for url ", urls[i]))
-			}
-			wg.Add(1)
-			go ipstackModule.ParseResults(&ipstackConfig, results[i])
-		}
-		wg.Wait()
-		logger.Info("IPStack module completed.")
-	}
-
-	// Elasticsearch
-	if elConfig.Export || elConfig.ExportToFile {
-		logger.Info("Starting ElasticExporter")
-		// Start goroutines for each url/endpoint
-		for i := 0; i < len(urls); i++ {
-			if debug {
-				logger.Debug(fmt.Sprintf("Exporting data for url %s", urls[i]))
-			}
-			wg.Add(1)
-			go elasticSearchModule.ExportData(&elConfig, results[i])
-		}
-		wg.Wait()
-		logger.Info("Exporting complete")
-	}
 }

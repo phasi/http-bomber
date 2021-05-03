@@ -68,9 +68,9 @@ func (test *Test) Init(settings *Settings, exportedDataChan *chan []*Result, wg 
 	test.Logger = logger
 }
 
-// RunTest goroutine executes the test as per settings object
+// Start runs the test
 // results are appended in a resultset ([]Result) which is then passed on to the channel
-func (test *Test) RunTest() {
+func (test *Test) Start() {
 	var resultSet []*Result
 
 	t := http.DefaultTransport.(*http.Transport).Clone()

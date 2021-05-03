@@ -39,6 +39,23 @@ func (mod *Module) Init(wg *sync.WaitGroup, logger *logging.Logger, debug bool) 
 	mod.Debug = debug
 }
 
+// Start ...
+func (mod *Module) Start(config *Config, results [][]*httptest.Result) {
+	if config.Export || config.ExportToFile {
+		mod.Logger.Info("Starting Elastic Exporter")
+		// Start goroutines for each url/endpoint
+		for i := 0; i < len(results); i++ {
+			if mod.Debug {
+				mod.Logger.Debug(fmt.Sprintf("Exporting data for url %s", results[i][0].URL))
+			}
+			mod.WaitGroup.Add(1)
+			go mod.ExportData(config, results[i])
+		}
+		mod.WaitGroup.Wait()
+		mod.Logger.Info("Exporting complete")
+	}
+}
+
 // ExportData exports data to either elasticsearch or file or both
 func (mod *Module) ExportData(config *Config, resultSet []*httptest.Result) {
 
@@ -140,7 +157,7 @@ func (mod *Module) CreateIndex(config *Config) {
 	}
 }
 
-// ElasticCreateIndexWithMapping creates an empty index with mapping
+// CreateIndexWithMapping creates an empty index with mapping
 func (mod *Module) CreateIndexWithMapping(config *Config, mapping *string) {
 
 	// create new http client (TODO: Make timeout configurable)
