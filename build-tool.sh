@@ -21,13 +21,13 @@ var AppVersion string = \"${VERSIONTAG}\"
 """ > temp/version.go
 
 if [[ $1 == "darwin" ]]; then
-    GOPATH=$(src)/temp GOOS=darwin GOARCH=amd64 go build -o dist/http-bomber_darwin_amd64 temp/*.go
+    cd temp && GOOS=darwin GOARCH=amd64 go build -o ../dist/http-bomber_darwin_amd64 *.go && cd ..
 elif [[ $1 == "linux" ]]; then
-    GOOS=linux GOARCH=amd64 go build -o dist/http-bomber_linux_amd64 temp/*.go
+    cd temp && GOOS=linux GOARCH=amd64 go build -o ../dist/http-bomber_linux_amd64 *.go && cd ..
 elif [[ $1 == "windows" ]]; then
-    GOOS=windows GOARCH=amd64 go build -o dist/http-bomber_win_amd64.exe temp/*.go
+    cd temp && GOOS=windows GOARCH=amd64 go build -o ../dist/http-bomber_win_amd64.exe *.go && cd ..
 elif [[ $1 == "docker" ]]; then
-    GOOS=linux GOARCH=amd64 go build -o dist/http-bomber_linux_amd64 temp/*.go
+    cd temp && GOOS=linux GOARCH=amd64 go build -o ../dist/http-bomber_linux_amd64 *.go && cd ..
     docker build -t $DOCKERIMAGE .
     clean
 fi
