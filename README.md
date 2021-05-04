@@ -1,6 +1,9 @@
 # http-bomber
 Make HTTP requests to one or multiple endpoints and send results to Elasticsearch
 
+## Usage documentation
+See ["USAGE.md"](./USAGE.md)
+
 ## Prerequisites
 
 You need to install the following software:
@@ -53,6 +56,7 @@ cd dist
 -ipstack-timeout 5 \
 -tls-skip-verify \
 -follow-redirects \
+-force-try-http2 \
 -debug
 
 

@@ -21,7 +21,7 @@ var AppVersion string = \"${VERSIONTAG}\"
 """ > temp/version.go
 
 if [[ $1 == "darwin" ]]; then
-    GOOS=darwin GOARCH=amd64 go build -o dist/http-bomber_darwin_amd64 temp/*.go
+    GOPATH=$(src)/temp GOOS=darwin GOARCH=amd64 go build -o dist/http-bomber_darwin_amd64 temp/*.go
 elif [[ $1 == "linux" ]]; then
     GOOS=linux GOARCH=amd64 go build -o dist/http-bomber_linux_amd64 temp/*.go
 elif [[ $1 == "windows" ]]; then
