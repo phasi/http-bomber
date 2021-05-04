@@ -47,7 +47,7 @@ var duration int
 var timeout int
 var interval int
 var networkStack string = "tcp"
-var tlsVerify bool = false
+var skipTLSVerify bool = false
 var followRedirects bool = false
 var forceAttemptHTTP2 bool = false
 
@@ -88,7 +88,7 @@ func init() {
 	flag.IntVar(&duration, "duration", 10, "Test duration in seconds")
 	flag.IntVar(&timeout, "timeout", 5, "Connection timeout in seconds")
 	flag.IntVar(&interval, "interval", 1000, "Request interval in milliseconds")
-	flag.BoolVar(&tlsVerify, "tls-skip-verify", false, "Skip TLS certificate validation.")
+	flag.BoolVar(&skipTLSVerify, "tls-skip-verify", false, "Skip TLS certificate validation.")
 	flag.BoolVar(&followRedirects, "follow-redirects", false, "Follow HTTP Redirects.")
 	flag.BoolVar(&forceAttemptHTTP2, "force-try-http2", false, "Force attempt HTTP2.")
 
@@ -139,7 +139,7 @@ func main() {
 			Duration:          time.Duration(duration),
 			Timeout:           time.Duration(timeout),
 			Interval:          time.Duration(interval),
-			SkipTLSVerify:     tlsVerify,
+			SkipTLSVerify:     skipTLSVerify,
 			FollowRedirects:   followRedirects,
 			ForceAttemptHTTP2: forceAttemptHTTP2,
 		}
