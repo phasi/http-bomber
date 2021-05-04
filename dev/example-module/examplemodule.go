@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-// Config holds configuration for exporting to elasticsearch
+// Config ...
 type Config struct {
 }
 
