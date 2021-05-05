@@ -1,7 +1,6 @@
 package examplemodule
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -36,9 +35,16 @@ func (mod *Module) Start(config *Config, results [][]*httptest.Result) {
 		mod.WaitGroup.Add(1)
 		// For performance execute each resultset in its own goroutine
 		// REPLACE below line with your custom function
-		go fmt.Println(results[i])
+		go mod.runModule(results[i])
 	}
 	// IMPORTANT: Wait for each goroutine
 	mod.WaitGroup.Wait()
 	mod.Logger.Info("Example module completed")
+}
+
+func (mod *Module) runModule(resultSet []*httptest.Result) {
+	// do something with resultSet
+
+	// Finally let waitgroup know that this goroutine was done
+	mod.WaitGroup.Done()
 }
