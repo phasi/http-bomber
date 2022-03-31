@@ -62,3 +62,7 @@ cd dist
 
 
 ```
+
+## Disclaimer
+
+This is actually my first go-project... And its not actively developed.. But it does what it promises :-)
